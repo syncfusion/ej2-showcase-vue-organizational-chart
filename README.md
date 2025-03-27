@@ -15,4 +15,4 @@ npm install
 
 ## To Run the application
 
-Run `npm run dev` for a dev server. Navigate to `http://localhost:8080/`. The application will automatically reload if you change any of the source files.
+Run `npm run serve` for a dev server. Navigate to `http://localhost:8080/`. The application will automatically reload if you change any of the source files.

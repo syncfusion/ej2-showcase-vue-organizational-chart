@@ -1,5 +1,5 @@
 import { ClickEventArgs } from "@syncfusion/ej2-buttons";
-import { DiagramTools, ImageElement, PathElement, StackPanel, TextElement } from "@syncfusion/ej2-diagrams";
+import { DiagramTools, ImageElement, NodeModel, PathElement, StackPanel, TextElement } from "@syncfusion/ej2-diagrams";
 import { SelectEventArgs } from "@syncfusion/ej2-vue-dropdowns";
 import { SelectedEventArgs, SliderChangeEventArgs } from "@syncfusion/ej2-inputs";
 import { MenuEventArgs } from "@syncfusion/ej2-navigations";
@@ -14,6 +14,8 @@ export class UtilityMethods {
     public showHidePictures = [];
     public matchingNodes = [];
     public currentIndex: number = 0;
+    public expandIconShape = 'None';
+    public collapseIconShape = 'None';
 
     // To download diagram json.
     public download(data: string) {
@@ -261,6 +263,7 @@ export class UtilityMethods {
         var zoom = diagram.scrollSettings.currentZoom;
         localStorage.setItem('export', diagram.saveDiagram());
         diagram.loadDiagram(localStorage.getItem('export'));
+        (document.getElementById("exportfileName") as HTMLInputElement).value = (document.getElementById('diagramName') as HTMLInputElement).innerHTML;
         diagram.exportDiagram({
             fileName: (document.getElementById("exportfileName") as any).value,
             format: (document.getElementById("exportFormat") as any).value,
@@ -336,32 +339,38 @@ export class UtilityMethods {
         node.data.Name = (name as any).value;
         var nameText = document.getElementById(node.id + '_text1_text');
         if (nameText) {
-          nameText.textContent = (name as any).value;
+            let nameTspanElement = nameText.querySelector("tspan");
+            if (nameTspanElement) nameTspanElement.textContent = (name as HTMLInputElement).value;
         }
         node.data.Designation = (designation as any).value;
         var desigText = document.getElementById(node.id + '_desig_text');
         if (desigText) {
-          desigText.textContent = (designation as any).value;
+            let designTspanElement = desigText.querySelector("tspan");
+            if (designTspanElement) designTspanElement.textContent = (designation as HTMLInputElement).value;
         }
         node.data.EmployeeID = (employeeID as any).value;
         var eidText = document.getElementById(node.id + '_eid_text');
         if (eidText) {
-          eidText.textContent = (employeeID as any).value;
+            let eidTspanElement = eidText.querySelector("tspan");
+            if (eidTspanElement) eidTspanElement.textContent = (employeeID as HTMLInputElement).value;
         }
         node.data.Team = (team as any).value;
         var teamText = document.getElementById(node.id + '_team_text');
         if (teamText) {
-          teamText.textContent = (team as any).value;
+            let teamTspanElement = teamText.querySelector("tspan");
+            if (teamTspanElement) teamTspanElement.textContent = (team as HTMLInputElement).value;
         }
         node.data.EmailId = (email as any).value;
         var emailText = document.getElementById(node.id + '_email_text');
         if (emailText) {
-          emailText.textContent = (email as any).value;
+            let emailTspanElement = emailText.querySelector("tspan");
+            if (emailTspanElement) emailTspanElement.textContent = (email as HTMLInputElement).value;
         }
         node.data.PhoneNumber = (phoneNo as any).value;
         var phoneText = document.getElementById(node.id + '_phone_text');
         if (phoneText) {
-          phoneText.textContent = (phoneNo as any).value;
+            let phoneTspanElement = phoneText.querySelector("tspan");
+            if (phoneTspanElement) phoneTspanElement.textContent = (phoneNo as HTMLInputElement).value;
         }
         node.tooltip.content = UtilityMethods.prototype.getContent(node.data);
         dialogInstance.hide();
@@ -604,22 +613,26 @@ export class UtilityMethods {
     // To remove the picture of the node.
     public removePicture(option: string) {
         let diagram = (document.getElementById("diagram") as any).ej2_instances[0];
+        let node = diagram.selectedItems.nodes[0];
         let id = diagram.selectedItems.nodes[0].data.Id;
         let nodeObj = diagram.dataSourceSettings.dataSource.dataSource.json.find((obj: any) => obj.Id === id);
         let imageTag = document.getElementById(diagram.selectedItems.nodes[0].id + '_picimage');
         if (option === 'Delete') {
             nodeObj.ImageUrl = '';
             (imageTag as any).href.baseVal = '';
+            this.removeImageFromWrapper(node);
         } else {
             if (nodeObj.ImageUrl !== '') {
                 let getObj = { id: nodeObj.Id, imageUrl: nodeObj.ImageUrl };
                 this.showHidePictures.push(getObj as never);
                 nodeObj.ImageUrl = '';
                 (imageTag as any).href.baseVal = '';
+                this.removeImageFromWrapper(node);
             } else {
                 let obj = this.showHidePictures.find((item) => (item as any).id === nodeObj.Id);
                 nodeObj.ImageUrl = obj ? (obj as any).imageUrl : '';
                 (imageTag as any).href.baseVal = obj ? (obj as any).imageUrl : '';
+                this.addImageToWrapper(node, obj);
                 // Find the index of the object in showHidePictures
                 let index = this.showHidePictures.findIndex((item) => (item as any).id === nodeObj.Id);
                 // If the object exists in showHidePictures, remove it using splice()
@@ -629,6 +642,33 @@ export class UtilityMethods {
             }
         }
 
+    }
+
+    public addImageToWrapper(node: any, obj: any, url?: string) {
+        if (node.wrapper && node.wrapper.children && node.wrapper.children[0] && node.wrapper.children[0].children) {
+            // Use obj?.imageUrl for optional chaining, or url as a fallback, or an empty string as the default.
+            const imageUrl = obj?.imageUrl || url || '';
+
+            // Iterate over each child and set the source to the determined imageUrl
+            for (let i = 0; i < node.wrapper.children[0].children.length; i++) {
+                let child = node.wrapper.children[0].children[i];
+
+                // Ensure the child actually has a source property before setting it
+                if (child instanceof ImageElement) {
+                    child.source = imageUrl;
+                }
+            }
+        }
+    }
+    public removeImageFromWrapper(node: any) {
+        if(node.wrapper.children[0].children) {
+            for (let i=0 ; i< node.wrapper.children[0].children.length; i++) {
+                let child = node.wrapper.children[0].children[i];
+                if (child && child instanceof ImageElement) {
+                    child.source = '';
+                }
+            }
+        }
     }
 
     // To modify the zoom value of diagram.

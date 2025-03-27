@@ -15,7 +15,6 @@ export class DropDownDataSources {
         let menuItems: MenuItemModel[] = [
             {
                 text: 'File',
-                iconCss: 'em-icons e-file',
                 items: [
                     { text: 'New', iconCss: 'sf-icon-new' },
                     { text: 'Open', iconCss: 'sf-icon-open' },
@@ -29,7 +28,6 @@ export class DropDownDataSources {
             // Returns design menu items.
             {
                 text: 'Design',
-                iconCss: 'em-icons e-edit',
                 items: [
                     {
                         text: 'Orientation', iconCss: 'sf-icon-page_orientation',

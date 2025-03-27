@@ -117,7 +117,7 @@
           <ejs-diagram ref="diagramRef" id="diagram" :width="width" :height="height" :layout="layout"
             :dataSourceSettings="data" :rulerSettings="rulerSettings" :snapSettings="snapSettings"
             :getNodeDefaults='nodeDefaults' :getConnectorDefaults='connDefaults' :selectionChange="selectionChange"
-            :setNodeTemplate='setNodeTemplate' :created="created" :selectedItems="selectedItems"
+            :setNodeTemplate='setNodeTemplate' :created="created"  :collectionChange="collectionChange" :selectedItems="selectedItems"
             :scrollSettings="scrollSettings" :scrollChange="scrollChange" :historyChange="historyChange"
             :pageSettings="pageSettings" :onUserHandleMouseDown="onUserHandleMouseDown">
           </ejs-diagram>
@@ -266,7 +266,7 @@
               </div>
 
               <div class="row db-prop-row" style="border-top: 1px solid #CBCBCB; padding-top: 10px; margin-top: 10px;">
-                <ejs-checkbox id="expandable" label="Expandable" @change="onExpandChange"></ejs-checkbox>
+                <ejs-checkbox id="expandable" ref="expandableRef" label="Expandable" @change="onExpandChange"></ejs-checkbox>
               </div>
 
               <div class="row db-prop-row">
@@ -370,7 +370,7 @@
                 File Name
               </div>
               <div class="row db-dialog-child-prop-row">
-                <input type="text" id="exportfileName" v-model="fileName" />
+                <input type="text" id="exportfileName"  v-model="fileName" />
               </div>
             </div>
             <div class="row db-dialog-prop-row">
@@ -452,6 +452,9 @@ const imagePath = require('@/assets/images/alex.png');
 let diagramInstance;
 let utilityMethods;
 let clientSideEvents;
+let defaultUploaderInstance;
+let pictureUploadInstance;
+let expandableInstance;
 let item = [
   {
       "Fill": "white", "StrokeColor": "black", "FontFamily": "Arial", "IsBold": false, "IsItalic": false, "Decoration": "None", "FontSize": 12, "color": "black", "Id": "parent", "Name": "Maria Anders", "Designation": "Managing Director",
@@ -693,13 +696,22 @@ export default defineComponent({
       obj.constraints = NodeConstraints.Default & ~NodeConstraints.Rotate | NodeConstraints.Tooltip;
       obj.tooltip = { content: getContent(obj.data), position: 'BottomRight', relativeMode: 'Object' },
         obj.style = { fill: 'transparent', strokeWidth: 2 };
+      var expandIconShape = 'None';
+      var collapseIconShape = 'None';
+      if (expandableInstance && expandableInstance.checked) {
+        expandIconShape = 'Minus';
+        collapseIconShape = 'Plus';
+      } else {
+        expandIconShape = 'None';
+        collapseIconShape = 'None';
+      }
       obj.expandIcon = {
         height: 20,
         width: 20,
         iconColor: 'white',
         cornerRadius: 10,
         borderColor: 'black',
-        shape: 'None',
+        shape:expandIconShape,
         fill: 'black',
         offset: { x: 0.5, y: 1.2 },
         pathData: 'M16.261993,32L16.359985,31.934998 16.454987,32 16.48999,31.846008 32,20.705013 32,12.254999 16.359985,23.539014 0,12.254999 0,20.705013 15.77301,31.846008z'
@@ -710,7 +722,7 @@ export default defineComponent({
         iconColor: 'white',
         cornerRadius: 10,
         borderColor: 'black',
-        shape: 'None',
+        shape: collapseIconShape,
         fill: 'black',
         offset: { x: 0.5, y: 1.2 },
         pathData: 'M16.261993,0L16.359985,0.065002445 16.454987,0 16.48999,0.15399169 32,11.294986 32,19.745 16.359985,8.5149861 0,19.745 0,11.294986 16.22699,0.15399169z'
@@ -829,7 +841,7 @@ export default defineComponent({
       innerStack.children = [text, desigText];
 
       // Add the line to the innerStack, and the innerStack to the content stack
-      innerStack.children = [text, desigText, line];
+      innerStack.children = [ line, text, desigText];
       content.children = [image, innerStack];
 
       return content;
@@ -937,6 +949,9 @@ export default defineComponent({
 
   mounted: function () {
     diagramInstance = this.$refs.diagramRef.ej2Instances;
+    defaultUploaderInstance = this.$refs.defaultUploadRef.ej2Instances;
+    pictureUploadInstance = this.$refs.pictureUploadRef.ej2Instances;
+    expandableInstance = this.$refs.expandableRef.ej2Instances;
     utilityMethods = new UtilityMethods();
     utilityMethods.showHidePictures = []
     clientSideEvents = new DiagramClientSideEvents();
@@ -949,8 +964,20 @@ export default defineComponent({
   methods: {
     //Created event
     created(args) {
-      this.diagram?.fitToPage({ mode: 'Page', region: 'Content' });
-      this.diagram?.zoomTo({ type: 'ZoomOut', zoomFactor: 0.2 });
+      diagramInstance = this.$refs.diagramRef.ej2Instances;
+      diagramInstance.fitToPage({ mode: 'Page', region: 'Content' });
+      diagramInstance.zoomTo({ type: 'ZoomOut', zoomFactor: 0.2 });
+    },
+    collectionChange(args) {
+      if (args.state === 'Changed' && args.type === 'Removal') {
+            let node = args.element;
+            let data = node.data;
+            if (data) {
+                let filterData = diagramInstance.dataSourceSettings.dataSource.dataSource.json.filter(x=>x.Name === data.Name);
+                let index = diagramInstance.dataSourceSettings.dataSource.dataSource.json.indexOf(filterData[0]);
+                diagramInstance.dataSourceSettings.dataSource.dataSource.json.splice(index,1)
+            }
+        }
     },
 
     getImagePath(imageName) {
@@ -975,6 +1002,7 @@ export default defineComponent({
     diagramNameChange(args) {
       document.getElementById('diagramName').innerHTML = document.getElementById('diagramEditable').value;
       document.getElementsByClassName('db-diagram-name-container')[0].classList.remove('db-edit-name');
+      document.getElementById("exportfileName").value = document.getElementById('diagramName').innerHTML;
     },
     //Method to do opertation of the menu bar
     menuSelect(args) {
@@ -1220,6 +1248,7 @@ export default defineComponent({
       var reader = new FileReader();
       reader.readAsText(file);
       reader.onloadend = this.loadDiagram.bind(this);
+      defaultUploaderInstance.clearAll();
     },
     onPictureUploadSuccess(args) {
       const file = args.file;
@@ -1232,6 +1261,8 @@ export default defineComponent({
         diagram.dataSourceSettings.dataSource.dataSource.json.find(x => x.Id == selectedNode.data.Id).ImageUrl = base64String;
         var imageTag = document.getElementById(selectedNode.id + '_picimage');
         imageTag.href.baseVal = base64String;
+        UtilityMethods.prototype.addImageToWrapper(selectedNode,undefined,base64String);
+        pictureUploadInstance.clearAll();
       };
       reader.readAsDataURL(file.rawFile);
     },
